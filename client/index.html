@@ -58,10 +58,10 @@
     <div id="jogo"></div>
 
     <section class="painel">
-      <p>🪵 Toras: <strong>{{ estado.toras }}</strong> (+{{ porMinuto }}/min)</p>
-      <p>👷 Trabalhadores: {{ estado.trabalhadores }}/{{ estado.limite }}
-        <progress :value="estado.trabalhadores" :max="estado.limite"></progress></p>
-      <p>🏠 Construções: {{ estado.concluidas }} concluídas, {{ estado.em_obra }} em obra</p>
+      <p>🪵 Madeira: <strong>{{ estado.madeira }}</strong> (+{{ porMinuto }}/min)</p>
+      <p>👷 Carpinteiros: {{ estado.carpinteiros }}/{{ estado.limite }}
+        <progress :value="estado.carpinteiros" :max="estado.limite"></progress></p>
+      <p>🚢 Docas: {{ estado.concluidas }} concluídas, {{ estado.em_obra }} em obra</p>
     </section>
 
     <section>
@@ -248,7 +248,7 @@
       const papel = ref("");
       const conectado = ref(false);
       const estado = reactive({
-        fase: "aguardando", toras: 0, trabalhadores: 0, limite: 0,
+        fase: "aguardando", madeira: 0, carpinteiros: 0, limite: 0,
         producao: 0, intervalo: 0, tempo_obra: 0, custo: 0, concluidas: 0, em_obra: 0,
       });
       const avisos = ref([]);
@@ -277,7 +277,7 @@
         if (!d) return "";
         const { estado: e, causa, ...resto } = d;
         const partes = Object.entries(resto).map(([k, v]) => k + ": " + v);
-        if (e) partes.push("toras " + e.toras + ", trabalhadores " + e.trabalhadores + "/" + e.limite);
+        if (e) partes.push("madeira " + e.madeira + ", carpinteiros " + e.carpinteiros + "/" + e.limite);
         return partes.join(" · ");
       }
       function registrar(sentido, nome, dados, reacao = "") {
@@ -315,7 +315,14 @@
         // ETAPA 5: ouvir "recurso.produzido"     -> jogo.recursoProduzido(...)
         //          e "construcao.concluida"      -> jogo.obraConcluida(...)
         // ETAPA 6: ouvir "vila.encerrada"        -> jogo.vilaEncerrada()
+        // ON estado.sincronizado: chega só para esta aba ao entrar. É a única forma de o
+        // cliente conhecer o estado; ele não calcula nada sozinho, só copia o que o servidor manda.
+        ouvir("estado.sincronizado", "guarda o estado e desenha o estaleiro", (d) => {
+          atualizar(d);
+          jogo.mostrarEstado(d.estado);
+        });
       }
+
 
       // ===== PEDIDOS (emit): o cliente PEDE algo ao servidor =====
       // pedir(evento)
