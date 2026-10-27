@@ -1,7 +1,7 @@
 # Especificação Vila em Tempo Real: Estaleiro
 
 **Integrante:** Mateus Vinicios de Oliveira — @mateusoliveira-hash
-**Tipo de vila (sorteio):** 17  Estaleiro (madeira → barcos)
+**Tipo de vila (sorteio):** 17 - Estaleiro (madeira → barcos)
 
 ## 1. Regras da vila
 
@@ -69,4 +69,4 @@ Dado que há menos de 50 de madeira disponível, a temporada está aberta e há 
 Dado que o Servidor emitiu `encomenda.recebida`, quando o tempo de 45 segundos foi atingido e `encomenda.entregue` não foi emitido, então o evento `encomenda.expirada` é enviado pelo temporizador a todos e a encomenda deixa de existir devido a expiração do prazo não alterando o número de barcos disponíveis.
 
 ### Disputa entre dois jogadores
-Dado que a temporada esta aberta, há somente 3 barcos disponíveis, o servidor emitiu `encomenda.recebida`, quando os jogadores A e B emitem `encomenda.entrega_solicitada` ao mesmo tempo, então o servidor atende a um pedido por vez: para o primeiro emite `encomenda.entregue` para todos os jogadores, com a encomenda deixando de existir, para o segundo emite `operacao.recusada` somente para o jogador com o motivo "Não há encomendas para entregar", e o estado não muda.
+Dado que a temporada está aberta, há somente 3 barcos disponíveis, o servidor emitiu `encomenda.recebida`, quando os jogadores A e B emitem `encomenda.entrega_solicitada` ao mesmo tempo, então o servidor atende a um pedido por vez: para o primeiro emite `encomenda.entregue` para todos os jogadores, com a encomenda deixando de existir, para o segundo emite `operacao.recusada` somente para o jogador com o motivo "Não há encomenda para entregar", e o estado não muda.
