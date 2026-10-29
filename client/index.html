@@ -308,7 +308,6 @@
 
         // ===== ESCUTAS (on): o cliente reage aos FATOS do servidor =====
         // ouvir(evento, "o que o cliente faz ao receber", função)
-        // ETAPA 4: ouvir "operacao.recusada"     -> jogo.recusado(...)
         // ETAPA 5: ouvir "recurso.produzido"     -> jogo.recursoProduzido(...)
         //          e "construcao.concluida"      -> jogo.obraConcluida(...)
         // ETAPA 6: ouvir "vila.encerrada"        -> jogo.vilaEncerrada()
@@ -333,6 +332,13 @@
           atualizar(d);
           avisar(d.por + " iniciou uma doca");
           jogo.obraIniciada(d.estado);
+        });
+
+        // ON operacao.recusada: só esta aba recebe, porque foi ela que pediu.
+        // Nada muda no estado; o cliente apenas mostra o motivo.
+        ouvir("operacao.recusada", "avisa o motivo e a tela treme", (d) => {
+          avisar(d.motivo, "erro");
+          jogo.recusado(d.motivo);
         });
       }
 

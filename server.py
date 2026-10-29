@@ -68,12 +68,27 @@ async def abrir_vila(sid, dados=None):
 
 @sio.on("construcao.solicitada")
 async def construir(sid, dados=None):
-    # ON construcao.solicitada, o jogador PEDE uma doca, o servidor altera o estado.
+    # ON construcao.solicitada, o jogador PEDE uma doca, o servidor valida e decide.
     pedido = "construcao.solicitada"
+    # Valida TUDO antes de alterar o estado, sem nenhum await no meio.
+    # Assim dois pedidos simultâneos são decididos um de cada vez, sem condição de corrida.
+    if estado["fase"] != "aberta":
+        motivo = "A temporada não está aberta"
+    elif estado["madeira"] < CUSTO:
+        motivo = "Madeira insuficiente"
+    elif estado["carpinteiros"] >= estado["limite"]:
+        motivo = "Sem carpinteiro livre"
+    else:
+        motivo = None
+
+    if motivo:
+        await recusar(sid, motivo, pedido)
+        return
+
     estado["madeira"] -= CUSTO
     estado["carpinteiros"] += 1
     estado["em_obra"] += 1
     nome = jogadores[sid]["nome"]
     # EMIT construcao.iniciada para TODOS: madeira e carpinteiros mudaram para todo mundo.
     # "por" diz quem pediu, para os outros saberem quem iniciou a obra. 
-    await sio.emit("construcao.iniciada", fato(pedido, por=nome))
+    await sio.emit("construcao.iniciada", fato(pedido, por=nome)) 
