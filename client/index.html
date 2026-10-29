@@ -69,7 +69,7 @@
         <button @click="abrirVila">Abrir temporada</button>
         <button @click="encerrarVila">Encerrar temporada</button>
       </template>
-      <button v-else @click="construir">🔨 Construir (custo {{ estado.custo }} toras)</button>
+      <button v-else @click="construir">🔨 Construir Doca (custo {{ estado.custo }} madeira)</button>
     </section>
 
     <ul class="avisos">
@@ -308,7 +308,6 @@
 
         // ===== ESCUTAS (on): o cliente reage aos FATOS do servidor =====
         // ouvir(evento, "o que o cliente faz ao receber", função)
-        // ETAPA 3: ouvir "construcao.iniciada"   -> jogo.obraIniciada(...)
         // ETAPA 4: ouvir "operacao.recusada"     -> jogo.recusado(...)
         // ETAPA 5: ouvir "recurso.produzido"     -> jogo.recursoProduzido(...)
         //          e "construcao.concluida"      -> jogo.obraConcluida(...)
@@ -327,6 +326,14 @@
           avisar("A temporada começou! O estaleiro está aberto.", "ok");
           jogo.vilaIniciada();
         });
+
+        // ON construcao.iniciada: chega para TODOS quando o servidor aceita uma doca.
+        // Só agora a tela desconta a madeira, porque o pedido foi confirmado.
+        ouvir("construcao.iniciada", "mostra o canteiro da doca", (d) => {
+          atualizar(d);
+          avisar(d.por + " iniciou uma doca");
+          jogo.obraIniciada(d.estado);
+        });
       }
 
 
@@ -337,7 +344,8 @@
           pedir("vila.abertura_solicitada");
       }
       function construir() {
-        // ETAPA 3: pedir "construcao.solicitada"
+        // EMIT construcao.solicitada: só um PEDIDO, o servidor decide e debita a madeira.
+        pedir("construcao.solicitada");
       }
       function encerrarVila() {
         // ETAPA 6: pedir "vila.encerramento_solicitado"

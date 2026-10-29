@@ -65,4 +65,15 @@ async def abrir_vila(sid, dados=None):
     # EMIT vila.iniciada para TODOS (sem to=): a fase mudou e todos precisa ver.
     await sio.emit("vila.iniciada", fato(pedido))
 
-    
+
+@sio.on("construcao.solicitada")
+async def construir(sid, dados=None):
+    # ON construcao.solicitada, o jogador PEDE uma doca, o servidor altera o estado.
+    pedido = "construcao.solicitada"
+    estado["madeira"] -= CUSTO
+    estado["carpinteiros"] += 1
+    estado["em_obra"] += 1
+    nome = jogadores[sid]["nome"]
+    # EMIT construcao.iniciada para TODOS: madeira e carpinteiros mudaram para todo mundo.
+    # "por" diz quem pediu, para os outros saberem quem iniciou a obra. 
+    await sio.emit("construcao.iniciada", fato(pedido, por=nome))
