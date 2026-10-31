@@ -307,8 +307,7 @@
         });
 
         // ===== ESCUTAS (on): o cliente reage aos FATOS do servidor =====
-        // ouvir(evento, "o que o cliente faz ao receber", função)ç
-        // ETAPA 6: ouvir "vila.encerrada"        -> jogo.vilaEncerrada()
+        // ouvir(evento, "o que o cliente faz ao receber", função)
         // ON estado.sincronizado: chega só para esta aba ao entrar. É a única forma de o
         // cliente conhecer o estado; ele não calcula nada sozinho, só copia o que o servidor manda.
         ouvir("estado.sincronizado", "guarda o estado e desenha o estaleiro", (d) => {
@@ -353,6 +352,14 @@
           avisar("Doca de " + d.por + " concluída! Um carpinteiro ficou livre.", "ok");
           jogo.obraConcluida(d.estado);
         });
+
+        // ON vila.encerrada: chega para TODOS quando o servidor aceita o encerramento.
+        // A tela só escurece depois do fato confirmado
+        ouvir("vila.encerrada", "escurece o estaleiro e avisa o fim da temporada", (d) => {
+          atualizar(d);
+          avisar("Temporada Encerrada");
+          jogo.vilaEncerrada();
+        });
       }
 
 
@@ -367,7 +374,8 @@
         pedir("construcao.solicitada");
       }
       function encerrarVila() {
-        // ETAPA 6: pedir "vila.encerramento_solicitado"
+        // EMIT vila.encerramento_solicitado: só um PEDIDO, quem decide é o servidor.
+        pedir("vila.encerramento_solicitado");
       }
 
       return { nome, papel, conectado, estado, avisos, eventosVisiveis, contadores, ocultarProducao, porMinuto,
