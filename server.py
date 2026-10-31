@@ -23,7 +23,7 @@ estado = {
     "custo": CUSTO,
     "concluidas": 0, # docas prontas
     "em_obra":0, # docas em construção
-    "barcos": 0 #recisp refinado, produzido pelas docas concluídas
+    "barcos": 0 #recurso refinado, produzido pelas docas concluídas
 }
 
 jogadores = {} # sid {"nome", "papel"}

@@ -281,7 +281,7 @@
         if (!d) return "";
         const { estado: e, causa, ...resto } = d;
         const partes = Object.entries(resto).map(([k, v]) => k + ": " + v);
-        if (e) partes.push("madeira " + e.madeira + ", barcos" + e.barcos + ", carpinteiros " + e.carpinteiros + "/" + e.limite);
+        if (e) partes.push("madeira " + e.madeira + ", barcos " + e.barcos + ", carpinteiros " + e.carpinteiros + "/" + e.limite);
         return partes.join(" · ");
       }
       function registrar(sentido, nome, dados, reacao = "") {
@@ -344,7 +344,7 @@
 
         // ON recurso.produzido: vem do temporizador, sem clique. O cliente nunca
         // pergunta se já produziu, só escuta e atualiza a madeira e barcos. 
-        ouvir("recurso.produzido", "atualiza a madeira e os barcos e mosta o +N", (d) => {
+        ouvir("recurso.produzido", "atualiza a madeira e os barcos e mostra o +N", (d) => {
           atualizar(d);
           jogo.recursoProduzido(d.estado);
         });
