@@ -62,6 +62,7 @@
       <p>👷 Carpinteiros: {{ estado.carpinteiros }}/{{ estado.limite }}
         <progress :value="estado.carpinteiros" :max="estado.limite"></progress></p>
       <p>🚢 Docas: {{ estado.concluidas }} concluídas, {{ estado.em_obra }} em obra</p>
+      <p>⛵ Barcos: <strong>{{ estado.barcos }}</strong></p>
     </section>
 
     <section>
@@ -251,7 +252,7 @@
       const papel = ref("");
       const conectado = ref(false);
       const estado = reactive({
-        fase: "aguardando", madeira: 0, carpinteiros: 0, limite: 0,
+        fase: "aguardando", madeira: 0, carpinteiros: 0, limite: 0, barcos:0,
         producao: 0, intervalo: 0, tempo_obra: 0, custo: 0, concluidas: 0, em_obra: 0,
       });
       const avisos = ref([]);
@@ -280,7 +281,7 @@
         if (!d) return "";
         const { estado: e, causa, ...resto } = d;
         const partes = Object.entries(resto).map(([k, v]) => k + ": " + v);
-        if (e) partes.push("madeira " + e.madeira + ", carpinteiros " + e.carpinteiros + "/" + e.limite);
+        if (e) partes.push("madeira " + e.madeira + ", barcos" + e.barcos + ", carpinteiros " + e.carpinteiros + "/" + e.limite);
         return partes.join(" · ");
       }
       function registrar(sentido, nome, dados, reacao = "") {
@@ -342,8 +343,8 @@
         });
 
         // ON recurso.produzido: vem do temporizador, sem clique. O cliente nunca
-        // pergunta se já produziu, só escuta e atualiza a madeira. 
-        ouvir("recurso.produzido", "atualiza a madeira e mostra o +N", (d) => {
+        // pergunta se já produziu, só escuta e atualiza a madeira e barcos. 
+        ouvir("recurso.produzido", "atualiza a madeira e os barcos e mosta o +N", (d) => {
           atualizar(d);
           jogo.recursoProduzido(d.estado);
         });

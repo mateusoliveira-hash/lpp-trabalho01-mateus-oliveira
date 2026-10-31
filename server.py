@@ -10,6 +10,7 @@ app = socketio.ASGIApp(sio, static_files={
 CUSTO = 50 # Valor de madeira gasto na construção de uma doca.
 TEMPO_OBRA = 10 # Quantidade de segundos até a doca ficar pronta.
 INTERVALO = 5 # Quantidade de segundos entre as produções automáticas.
+MADEIRA_POR_BARCO = 10 # Madeira gasta para produzir um barco
 
 estado = {
     "fase": "aguardando", # aguardando, aberta, encerrada
@@ -21,7 +22,8 @@ estado = {
     "tempo_obra": TEMPO_OBRA,
     "custo": CUSTO,
     "concluidas": 0, # docas prontas
-    "em_obra":0 # docas em construção
+    "em_obra":0, # docas em construção
+    "barcos": 0 #recisp refinado, produzido pelas docas concluídas
 }
 
 jogadores = {} # sid {"nome", "papel"}
@@ -104,6 +106,14 @@ async def producao():
         if estado["fase"] != "aberta":
             break
         estado["madeira"] += estado["producao"]
+        # refino: cada doca concluída troca madeira por 1 barco, enquanto houver madeira.
+
+        for _ in range(estado["concluidas"]):
+            if estado["madeira"] < MADEIRA_POR_BARCO:
+                break
+            estado["madeira"] -= MADEIRA_POR_BARCO
+            estado["barcos"] += 1
+
         # EMIT recurso.produzido para TODOS: o estoque mudou e ninguém precisa perguntar.
         await sio.emit("recurso.produzido", fato("temporizador"))
 
