@@ -307,9 +307,7 @@
         });
 
         // ===== ESCUTAS (on): o cliente reage aos FATOS do servidor =====
-        // ouvir(evento, "o que o cliente faz ao receber", função)
-        // ETAPA 5: ouvir "recurso.produzido"     -> jogo.recursoProduzido(...)
-        //          e "construcao.concluida"      -> jogo.obraConcluida(...)
+        // ouvir(evento, "o que o cliente faz ao receber", função)ç
         // ETAPA 6: ouvir "vila.encerrada"        -> jogo.vilaEncerrada()
         // ON estado.sincronizado: chega só para esta aba ao entrar. É a única forma de o
         // cliente conhecer o estado; ele não calcula nada sozinho, só copia o que o servidor manda.
@@ -339,6 +337,21 @@
         ouvir("operacao.recusada", "avisa o motivo e a tela treme", (d) => {
           avisar(d.motivo, "erro");
           jogo.recusado(d.motivo);
+        });
+
+        // ON recurso.produzido: vem do temporizador, sem clique. O cliente nunca
+        // pergunta se já produziu, só escuta e atualiza a madeira. 
+        ouvir("recurso.produzido", "atualiza a madeira e mostra o +N", (d) => {
+          atualizar(d);
+          jogo.recursoProduzido(d.estado);
+        });
+
+        // ON construcao.concluida: o servidor avisa quando os 10 segundos terminam.
+        // o cliente não conta o tempo, só reage ao fato.
+        ouvir("construcao.concluida", "transforma o canteiro em doca pronta", (d) => {
+          atualizar(d);
+          avisar("Doca de " + d.por + " concluída! Um carpinteiro ficou livre.", "ok");
+          jogo.obraConcluida(d.estado);
         });
       }
 

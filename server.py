@@ -62,6 +62,7 @@ async def abrir_vila(sid, dados=None):
         await recusar(sid, "A temporada já foi aberta", pedido)
         return
     estado["fase"] = "aberta"
+    sio.start_background_task(producao)
     # EMIT vila.iniciada para TODOS (sem to=): a fase mudou e todos precisa ver.
     await sio.emit("vila.iniciada", fato(pedido))
 
@@ -92,3 +93,30 @@ async def construir(sid, dados=None):
     # EMIT construcao.iniciada para TODOS: madeira e carpinteiros mudaram para todo mundo.
     # "por" diz quem pediu, para os outros saberem quem iniciou a obra. 
     await sio.emit("construcao.iniciada", fato(pedido, por=nome)) 
+    sio.start_background_task(obra, nome)
+
+async def producao():
+    #Temporizador: é uma FONTE de eventos, sem clique de ninguém.
+    while estado["fase"] == "aberta":
+        # sio.sleep libera o laço de eventos, time.sleep travaria o servidor inteiro.
+        await sio.sleep(INTERVALO)
+        # A temporada pode ter sido encerrada durante a espera.
+        if estado["fase"] != "aberta":
+            break
+        estado["madeira"] += estado["producao"]
+        # EMIT recurso.produzido para TODOS: o estoque mudou e ninguém precisa perguntar.
+        await sio.emit("recurso.produzido", fato("temporizador"))
+
+async def obra(nome):
+    # Temporizador de uma doca: roda em segundo plano, separado do pedido.
+    await sio.sleep(TEMPO_OBRA)
+    # Pela spec, obras em andamento não terminam depois do encerramento.
+    if estado["fase"] != "aberta":
+        return
+    estado["carpinteiros"] -= 1
+    estado["em_obra"] -= 1
+    estado["concluidas"] += 1
+    causa = "construcao.iniciada (temporizador)"
+
+    # EMIT construcao.concluida para TODOS: o carpinteiro ficou livre e há uma doca nova
+    await sio.emit("construcao.concluida", fato(causa, por=nome))
