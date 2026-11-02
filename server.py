@@ -112,15 +112,17 @@ async def producao():
             break
         estado["madeira"] += estado["producao"]
         # refino: cada doca concluída troca madeira por 1 barco, enquanto houver madeira.
-
+        novos = 0
         for _ in range(estado["concluidas"]):
             if estado["madeira"] < MADEIRA_POR_BARCO:
                 break
             estado["madeira"] -= MADEIRA_POR_BARCO
             estado["barcos"] += 1
+            novos += 1
 
         # EMIT recurso.produzido para TODOS: o estoque mudou e ninguém precisa perguntar.
-        await sio.emit("recurso.produzido", fato("temporizador"))
+        # barcos_novos diz quantos barcos saíram neste ciclo (o cliente não calcula).
+        await sio.emit("recurso.produzido", fato("temporizador", barcos_novos=novos))
 
 async def obra(nome):
     # Temporizador de uma doca: roda em segundo plano, separado do pedido.

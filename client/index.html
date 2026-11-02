@@ -117,7 +117,8 @@
 
 <script>
   // =====================================================================
-  //  A VILA DESENHADA (Phaser) - já vem pronta, você NÃO precisa alterar.
+  //  O ESTALEIRO DESENHADO (Phaser). O kit trazia a vila de exemplo; aqui ela
+  //  foi adaptada: mapa à beira-mar, docas no lugar das casas e barcos no mar.
   //  O cenário é um MAPA (Tilemap) feito no Tiled: client/assets/vila.json.
   //  Cada método abaixo reage a UM evento do servidor.
   //  Seu trabalho é chamar o método certo dentro de cada socket.on(...).
@@ -156,6 +157,10 @@
         this.larg = mapa.widthInPixels;
         this.alt = mapa.heightInPixels;
 
+        // 4) docas e barcos são desenhados com formas do Phaser e viram texturas
+        this.criarTexturas();
+        this.barcos = [];     // sprites dos barcos atracados no mar
+
         this.obras = [];      // obras em andamento (a primeira a começar é a primeira a terminar)
         this.usados = 0;      // quantos lotes já foram usados
         this.faixa = this.add.text(this.larg / 2, 9, "⏳ Aguardando o Mestre", {
@@ -169,9 +174,41 @@
 
       // ----- apoio -----
       lote(i) { return this.lotes[i % this.lotes.length]; }
-      criarCasa(x, y) {
-        const casa = this.add.sprite(x, y, "sprites", 0);
-        this.tweens.add({ targets: casa, scale: { from: 0.3, to: 1 }, duration: 400, ease: "Back.Out" });
+      criarTexturas() {
+        const g = this.make.graphics({ add: false });
+        // doca: píer de tábuas que sai da margem e entra no mar, com pilares embaixo
+        g.fillStyle(0x5d4037).fillRect(0, 0, 14, 42);
+        g.fillStyle(0xa1887f);
+        for (let y = 1; y < 40; y += 4) g.fillRect(1, y, 12, 3);
+        g.fillStyle(0x3e2723).fillRect(0, 38, 3, 4).fillRect(11, 38, 3, 4);
+        g.generateTexture("doca", 14, 42);
+        g.clear();
+        // barco: casco de madeira, mastro e vela
+        g.fillStyle(0x6d4c41).fillPoints([{ x: 0, y: 9 }, { x: 16, y: 9 }, { x: 13, y: 14 }, { x: 3, y: 14 }], true);
+        g.fillStyle(0x3e2723).fillRect(7, 0, 1, 9);
+        g.fillStyle(0xffffff).fillTriangle(8, 0, 8, 8, 14, 8);
+        g.fillStyle(0xd84315).fillTriangle(6, 2, 6, 8, 2, 8);
+        g.generateTexture("barco", 16, 15);
+        g.destroy();
+      }
+      criarDoca(x, y) {
+        const doca = this.add.image(x, y + 6, "doca").setOrigin(0.5, 0);
+        this.tweens.add({ targets: doca, scaleY: { from: 0, to: 1 }, duration: 400, ease: "Back.Out" });
+      }
+      mostrarBarcos(total) {
+        // um barco desenhado por barco do estado (até 14); acima disso, o painel mostra o número
+        const alvo = Math.min(total, 14);
+        while (this.barcos.length > alvo) {
+          const b = this.barcos.pop();
+          this.tweens.add({ targets: b, x: b.x + 40, alpha: 0, duration: 800, onComplete: () => b.destroy() });
+        }
+        while (this.barcos.length < alvo) {
+          const i = this.barcos.length;
+          const b = this.add.image(20 + (i % 7) * 40 + (i >= 7 ? 20 : 0), i >= 7 ? 134 : 120, "barco");
+          this.tweens.add({ targets: b, scale: { from: 0, to: 1 }, duration: 400, ease: "Back.Out" });
+          this.tweens.add({ targets: b, y: b.y - 1, duration: 900, yoyo: true, repeat: -1, delay: i * 120 });
+          this.barcos.push(b);
+        }
       }
       criarObra(duracao) {
         const { x, y } = this.lote(this.usados++);
@@ -194,11 +231,13 @@
       mostrarEstado(estado) {                 // estado.sincronizado
         for (let i = 0; i < estado.concluidas; i++) {
           const p = this.lote(this.usados++);
-          this.criarCasa(p.x, p.y);
+          this.criarDoca(p.x, p.y);
         }
+        this.mostrarBarcos(estado.barcos);
         for (let i = 0; i < estado.em_obra; i++) this.criarObra(estado.tempo_obra * 1000);
         if (estado.fase === "aberta") this.vilaIniciada();
         if (estado.fase === "encerrada") this.vilaEncerrada();
+        if (estado.encomenda) this.encomendaRecebida(estado);
       }
       vilaIniciada() {                        // vila.iniciada
         this.faixa.setText("☀️ Temporada aberta");
@@ -211,11 +250,13 @@
         const obra = this.obras.shift();
         if (!obra) return;
         obra.canteiro.destroy(); obra.fundo.destroy(); obra.barra.destroy();
-        this.criarCasa(obra.x, obra.y);
-        this.flutuar("🏠 Obra concluída!", obra.x, obra.y - 18, "#1b5e20");
+        this.criarDoca(obra.x, obra.y);
+        this.flutuar("⚓ Doca pronta!", obra.x, obra.y - 18, "#1b5e20");
       }
-      recursoProduzido(estado) {              // recurso.produzido
+      recursoProduzido(estado, novos) {       // recurso.produzido
         this.flutuar("+" + estado.producao + " 🪵", this.acampamento.x, this.acampamento.y, "#1b5e20");
+        if (novos) this.flutuar("+" + novos + " ⛵", this.larg / 2 + 20, 104, "#0d47a1");
+        this.mostrarBarcos(estado.barcos);
       }
       recusado(motivo) {                      // operacao.recusada (só quem pediu)
         this.cameras.main.shake(180, 0.006);
@@ -224,6 +265,19 @@
       vilaEncerrada() {                       // vila.encerrada
         this.faixa.setText("🌙 Temporada encerrada");
         this.add.rectangle(this.larg / 2, this.alt / 2, this.larg, this.alt, 0x000033, 0.35).setDepth(5);
+      }
+      encomendaRecebida(estado) {             // encomenda.recebida
+        this.faixa.setText("📜 Encomenda: " + estado.encomenda.barcos + " barcos em " + estado.encomenda.prazo + " s");
+      }
+      encomendaEntregue(estado) {             // encomenda.entregue
+        this.faixa.setText("☀️ Temporada aberta");
+        this.mostrarBarcos(estado.barcos);    // os barcos entregues zarpam para a direita
+        this.flutuar("⛵ Encomenda entregue!", this.larg / 2, this.alt / 2, "#1b5e20");
+      }
+      encomendaExpirada() {                   // encomenda.expirada
+        this.faixa.setText("☀️ Temporada aberta");
+        this.cameras.main.shake(180, 0.004);
+        this.flutuar("⌛ Encomenda expirada", this.larg / 2, this.alt / 2, "#b00020");
       }
     }
 
@@ -242,6 +296,9 @@
       recursoProduzido: (...a) => chamar("recursoProduzido", ...a),
       recusado: (...a) => chamar("recusado", ...a),
       vilaEncerrada: (...a) => chamar("vilaEncerrada", ...a),
+      encomendaRecebida: (...a) => chamar("encomendaRecebida", ...a),
+      encomendaEntregue: (...a) => chamar("encomendaEntregue", ...a),
+      encomendaExpirada: (...a) => chamar("encomendaExpirada", ...a),
     };
   }
 </script>
@@ -351,9 +408,9 @@
 
         // ON recurso.produzido: vem do temporizador, sem clique. O cliente nunca
         // pergunta se já produziu, só escuta e atualiza a madeira e barcos. 
-        ouvir("recurso.produzido", "atualiza a madeira e os barcos e mostra o +N", (d) => {
+        ouvir("recurso.produzido", "atualiza a madeira e os barcos, mostra o +N e desenha os barcos novos", (d) => {
           atualizar(d);
-          jogo.recursoProduzido(d.estado);
+          jogo.recursoProduzido(d.estado, d.barcos_novos);
         });
 
         // ON construcao.concluida: o servidor avisa quando os 10 segundos terminam.
@@ -374,22 +431,25 @@
 
         // ON encomenda.recebida: chega a TODOS quando o servidor aceita a encomenda
         // O cliente não conta o prazo, quem avisa quando ele acaba é o servidor
-        ouvir("encomenda.recebida", "mostra a encomenda e o prazo no painel", (d) => {
+        ouvir("encomenda.recebida", "mostra a encomenda e o prazo no painel e na faixa", (d) => {
           atualizar(d);
           avisar("Nova encomenda: " +d.estado.encomenda.barcos + " barcos!");
+          jogo.encomendaRecebida(d.estado);
         });
 
         // ON encomenda.entregue, chega para TODOS, mesmo para quem perdeu a disputa.
         // Só agora a tela desconta os barcos e soma o pagamento.
-        ouvir("encomenda.entregue", "atualiza barcos e madeira e limpa a encomenda", (d) => {
+        ouvir("encomenda.entregue", "atualiza barcos e madeira, limpa a encomenda e os barcos zarpam", (d) => {
           atualizar(d);
           avisar(d.por + " entregou a encomenda!", "ok");
+          jogo.encomendaEntregue(d.estado);
         });
 
         // ON encomenda.expirada, vem do temporizador, sem clique de ninguém.
         ouvir("encomenda.expirada", "limpa a encomenda e avisa que não houve pagamento", (d) => {
           atualizar(d);
           avisar("A encomenda expirou, sem pagamento.", "erro");
+          jogo.encomendaExpirada();
         });
       }
 
