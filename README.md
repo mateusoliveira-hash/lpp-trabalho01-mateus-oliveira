@@ -51,4 +51,3 @@ Usei o **Claude Code** (Anthropic) como mentor durante todo o trabalho. Ele expl
 
 ## Extras
 - **Contadores por evento** no Painel de eventos (Etapa 7, obrigatória só para duplas): mostram quantas vezes cada evento foi enviado ou recebido por aquela aba.
-- **Recurso refinado e evento próprio com prazo:** barcos produzidos pelas docas e encomendas que expiram por temporizador, com contadores de entregas e expiradas.
