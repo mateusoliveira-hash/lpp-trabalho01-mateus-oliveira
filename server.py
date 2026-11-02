@@ -182,7 +182,7 @@ async def prazo_encomenda(encomenda):
         return
     estado["encomenda"] = None
     estado["expiradas"] += 1
-    # EMIT encomenda.expirada para TODOS: e encomenda acabou sem pagamento.
+    # EMIT encomenda.expirada para TODOS: a encomenda acabou sem pagamento.
     await sio.emit("encomenda.expirada", fato("encomenda.recebida (temporizador)"))
 
 @sio.on("encomenda.entrega_solicitada")

@@ -373,7 +373,7 @@
         });
 
         // ON encomenda.recebida: chega a TODOS quando o servidor aceita a encomenda
-        // O cliente não conta o prazo, quem afisa quando ele acaba é o servidor
+        // O cliente não conta o prazo, quem avisa quando ele acaba é o servidor
         ouvir("encomenda.recebida", "mostra a encomenda e o prazo no painel", (d) => {
           atualizar(d);
           avisar("Nova encomenda: " +d.estado.encomenda.barcos + " barcos!");
@@ -381,7 +381,7 @@
 
         // ON encomenda.entregue, chega para TODOS, mesmo para quem perdeu a disputa.
         // Só agora a tela desconta os barcos e soma o pagamento.
-        ouvir("encomenda.entregue", "atualizar barcos e madeira e limpa a encomenda", (d) => {
+        ouvir("encomenda.entregue", "atualiza barcos e madeira e limpa a encomenda", (d) => {
           atualizar(d);
           avisar(d.por + " entregou a encomenda!", "ok");
         });
@@ -389,7 +389,7 @@
         // ON encomenda.expirada, vem do temporizador, sem clique de ninguém.
         ouvir("encomenda.expirada", "limpa a encomenda e avisa que não houve pagamento", (d) => {
           atualizar(d);
-          avisar("A encomenda expirou, sem pafamento.", "erro");
+          avisar("A encomenda expirou, sem pagamento.", "erro");
         });
       }
 
@@ -410,7 +410,7 @@
       }
 
       function aceitarEncomenda(){
-        // EMIT encomenfa.criacao_solicitada: só um PEDIDO, quem decide é o servidor.
+        // EMIT encomenda.criacao_solicitada: só um PEDIDO, quem decide é o servidor.
         pedir("encomenda.criacao_solicitada");
       }
 
