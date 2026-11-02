@@ -60,7 +60,7 @@ async def recusar(sid, motivo, causa):
 
 @sio.on("vila.abertura_solicitada")
 async def abrir_vila(sid, dados=None):
-    # ON vila.abertura_solicitada: o Mestre PEDE para abrir, o servidor decide de pode
+    # ON vila.abertura_solicitada: o Mestre PEDE para abrir, o servidor decide se pode
     pedido = "vila.abertura_solicitada"
     if jogadores[sid]["papel"] != "mestre":
         await recusar(sid, "Só o Mestre pode abrir a temporada", pedido)
@@ -70,7 +70,7 @@ async def abrir_vila(sid, dados=None):
         return
     estado["fase"] = "aberta"
     sio.start_background_task(producao)
-    # EMIT vila.iniciada para TODOS (sem to=): a fase mudou e todos precisa ver.
+    # EMIT vila.iniciada para TODOS (sem to=): a fase mudou e todos precisam ver.
     await sio.emit("vila.iniciada", fato(pedido))
 
 
