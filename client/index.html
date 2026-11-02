@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vila em Tempo Real</title>
+  <title>Estaleiro em Tempo Real</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 580px; margin: 24px auto; padding: 0 12px; }
     .cartao, .painel { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin: 12px 0; }
@@ -43,7 +43,7 @@
 
   <!-- Tela de entrada -->
   <section v-if="!conectado" class="cartao">
-    <h1>🏘️ Vila em Tempo Real</h1>
+    <h1>⚓ Estaleiro em Tempo Real</h1>
     <input v-model="nome" placeholder="Seu nome">
     <button @click="entrar('mestre')">Entrar como Mestre</button>
     <button @click="entrar('jogador')">Entrar como Jogador</button>
@@ -51,7 +51,7 @@
 
   <!-- Tela da vila -->
   <main v-else>
-    <h1>🏘️ Vila</h1>
+    <h1>⚓ Estaleiro</h1>
     <p>{{ papel }}: <strong>{{ nome || "Anônimo" }}</strong> · Temporada: <strong>{{ estado.fase }}</strong></p>
 
     <!-- A vila desenhada pelo Phaser aparece aqui -->
@@ -108,7 +108,7 @@
     </section>
   </main>
 
-  <footer>Desenvolvido por: [Nome do(a) Aluno(a)]</footer>
+  <footer>Desenvolvido por: Mateus Vinicios de Oliveira</footer>
 </div>
 
 <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.js"></script>

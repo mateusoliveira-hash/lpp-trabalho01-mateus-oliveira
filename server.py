@@ -6,7 +6,6 @@ app = socketio.ASGIApp(sio, static_files={
     "/assets": "client/assets",      # mapa, tileset e sprites da vila
 })
 
-# A partir da Etapa 1, adicione o seu código ABAIXO desta linha.
 CUSTO = 50 # Valor de madeira gasto na construção de uma doca.
 TEMPO_OBRA = 10 # Quantidade de segundos até a doca ficar pronta.
 INTERVALO = 5 # Quantidade de segundos entre as produções automáticas.
