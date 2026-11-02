@@ -11,6 +11,9 @@ CUSTO = 50 # Valor de madeira gasto na construção de uma doca.
 TEMPO_OBRA = 10 # Quantidade de segundos até a doca ficar pronta.
 INTERVALO = 5 # Quantidade de segundos entre as produções automáticas.
 MADEIRA_POR_BARCO = 10 # Madeira gasta para produzir um barco
+BARCOS_ENCOMENDA = 3 # Barcos exigidos em cada encomenda
+PRAZO_ENCOMENDA = 45 # Segundos para entregar encomenda
+PAGAMENTO = 100 # Madeira recebida ao entregar a encomenda
 
 estado = {
     "fase": "aguardando", # aguardando, aberta, encerrada
@@ -23,7 +26,10 @@ estado = {
     "custo": CUSTO,
     "concluidas": 0, # docas prontas
     "em_obra":0, # docas em construção
-    "barcos": 0 #recurso refinado, produzido pelas docas concluídas
+    "barcos": 0, #recurso refinado, produzido pelas docas concluídas
+    "encomenda": None, # None significa que não há encomenda em andamento
+    "entregas": 0, # Número de entregas de barcos realizadas
+    "expiradas":0 # Quantas encomendas expiraram o prazo de 45 segundos
 }
 
 jogadores = {} # sid {"nome", "papel"}
@@ -142,6 +148,63 @@ async def encerrar_vila(sid, dados=None):
         await recusar(sid, "A temporada não está aberta", pedido)
         return
     estado["fase"] = "encerrada"
+    estado["encomenda"] = None # Pela Spec, encomendas pendentes são descartadas
     # EMIT vila.encerrada para TODOS, a partir daqui, novos pedidos são recusados.
     await sio.emit("vila.encerrada", fato(pedido))
 
+@sio.on("encomenda.criacao_solicitada")
+async def aceitar_encomenda(sid, dados=None):
+    # ON encomenda.criacao_solicitada: o Mestre PEDE, o servidor valida e decide.
+    pedido = "encomenda.criacao_solicitada"
+    if jogadores[sid]["papel"] != "mestre":
+        motivo = "Só o Mestre pode aceitar encomendas"
+    elif estado["fase"] != "aberta":
+        motivo = "A temporada não está aberta"
+    elif estado["encomenda"] is not None:
+        motivo = "Já existe uma encomenda em andamento"
+    else:
+        motivo = None
+
+    if motivo:
+        await recusar(sid, motivo, pedido)
+        return
+    encomenda = {"barcos": BARCOS_ENCOMENDA, "prazo": PRAZO_ENCOMENDA}
+    estado["encomenda"] = encomenda
+    # EMIT encomenda.recebida para TODOS: todos precisam ver que há uma encomenda e seu prazo.
+    await sio.emit("encomenda.recebida", fato(pedido))
+    sio.start_background_task(prazo_encomenda, encomenda)
+
+async def prazo_encomenda(encomenda):
+    # Temporizador: é a passagem do tempo que gera evento, sem clique de ninguém
+    await sio.sleep(PRAZO_ENCOMENDA)
+    # Só expira se ESTA encomenda ainda estiver em andamento.
+    if estado["encomenda"] is not encomenda:
+        return
+    estado["encomenda"] = None
+    estado["expiradas"] += 1
+    # EMIT encomenda.expirada para TODOS: e encomenda acabou sem pagamento.
+    await sio.emit("encomenda.expirada", fato("encomenda.recebida (temporizador)"))
+
+@sio.on("encomenda.entrega_solicitada")
+async def entregar_encomenda(sid, dados=None):
+    # ON encomenda.entrega_solicitada, o jogador PEDE, o servidor valida e decide.
+    pedido = "encomenda.entrega_solicitada"
+    # Sem await até alterar o estado, em uma disputa, só o primeiro pedido encontra a encomenda
+    if estado["fase"] != "aberta":
+        motivo = "A temporada não está aberta"
+    elif estado["encomenda"] is None:
+        motivo = "Não há encomenda para entregar"
+    elif estado["barcos"] < BARCOS_ENCOMENDA:
+        motivo = "Barcos insuficientes"
+    else:
+        motivo = None
+    if motivo:
+        await recusar(sid, motivo, pedido)
+        return
+
+    estado["barcos"] -= BARCOS_ENCOMENDA
+    estado["madeira"] += PAGAMENTO
+    estado["encomenda"] = None
+    estado["entregas"] += 1
+    # EMIT encomenda.entregue para TODOS, barcos, madeira e encomenda mudaram para todo mundo.
+    await sio.emit("encomenda.entregue", fato(pedido, por=jogadores[sid]["nome"]))

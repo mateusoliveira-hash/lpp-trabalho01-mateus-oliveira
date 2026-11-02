@@ -63,14 +63,20 @@
         <progress :value="estado.carpinteiros" :max="estado.limite"></progress></p>
       <p>🚢 Docas: {{ estado.concluidas }} concluídas, {{ estado.em_obra }} em obra</p>
       <p>⛵ Barcos: <strong>{{ estado.barcos }}</strong></p>
+      <p>📜 Encomenda:  <strong>{{ estado.encomenda ? estado.encomenda.barcos + " barcos em até " + estado.encomenda.prazo + " s" : "nenhuma"}}</strong></p>
+      <p>✅ Entregas: {{ estado.entregas }} · ⌛ Expiradas: {{ estado.expiradas }}</p>
     </section>
 
     <section>
       <template v-if="papel === 'mestre'">
         <button @click="abrirVila">Abrir temporada</button>
+        <button @click="aceitarEncomenda">📜 Aceitar encomenda</button>
         <button @click="encerrarVila">Encerrar temporada</button>
       </template>
-      <button v-else @click="construir">🔨 Construir Doca (custo {{ estado.custo }} madeira)</button>
+      <template v-else>
+        <button @click="construir">🔨 Construir Doca (custo {{ estado.custo }} madeira)</button>
+        <button @click="entregarEncomenda">⛵ Entregar encomenda</button>
+      </template>
     </section>
 
     <ul class="avisos">
@@ -253,7 +259,8 @@
       const conectado = ref(false);
       const estado = reactive({
         fase: "aguardando", madeira: 0, carpinteiros: 0, limite: 0, barcos:0,
-        producao: 0, intervalo: 0, tempo_obra: 0, custo: 0, concluidas: 0, em_obra: 0,
+        producao: 0, intervalo: 0, tempo_obra: 0, custo: 0, concluidas: 0, em_obra: 0, encomenda: null, 
+        entregas: 0, expiradas: 0
       });
       const avisos = ref([]);
       const eventos = ref([]);              // linha do tempo do painel de eventos
@@ -364,6 +371,26 @@
           avisar("Temporada Encerrada");
           jogo.vilaEncerrada();
         });
+
+        // ON encomenda.recebida: chega a TODOS quando o servidor aceita a encomenda
+        // O cliente não conta o prazo, quem afisa quando ele acaba é o servidor
+        ouvir("encomenda.recebida", "mostra a encomenda e o prazo no painel", (d) => {
+          atualizar(d);
+          avisar("Nova encomenda: " +d.estado.encomenda.barcos + " barcos!");
+        });
+
+        // ON encomenda.entregue, chega para TODOS, mesmo para quem perdeu a disputa.
+        // Só agora a tela desconta os barcos e soma o pagamento.
+        ouvir("encomenda.entregue", "atualizar barcos e madeira e limpa a encomenda", (d) => {
+          atualizar(d);
+          avisar(d.por + " entregou a encomenda!", "ok");
+        });
+
+        // ON encomenda.expirada, vem do temporizador, sem clique de ninguém.
+        ouvir("encomenda.expirada", "limpa a encomenda e avisa que não houve pagamento", (d) => {
+          atualizar(d);
+          avisar("A encomenda expirou, sem pafamento.", "erro");
+        });
       }
 
 
@@ -382,8 +409,18 @@
         pedir("vila.encerramento_solicitado");
       }
 
+      function aceitarEncomenda(){
+        // EMIT encomenfa.criacao_solicitada: só um PEDIDO, quem decide é o servidor.
+        pedir("encomenda.criacao_solicitada");
+      }
+
+      function entregarEncomenda(){
+        // EMIT encomenda.entrega_solicitada: só um pedido, o servidor confere os barcos e o prazo
+        pedir("encomenda.entrega_solicitada");
+      }
+
       return { nome, papel, conectado, estado, avisos, eventosVisiveis, contadores, ocultarProducao, porMinuto,
-               entrar, abrirVila, construir, encerrarVila };
+               entrar, abrirVila, construir, encerrarVila, aceitarEncomenda, entregarEncomenda };
     }
   }).mount("#app");
 </script>
